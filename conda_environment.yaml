@@ -1,4 +1,4 @@
-name: robodiff
+name: DP
 channels:
   - pytorch
   - pytorch3d
@@ -51,6 +51,7 @@ dependencies:
   # trick to force reinstall imagecodecs via pip
   - imagecodecs==2022.8.8
   - pip:
+    - --index-url https://pypi.tuna.tsinghua.edu.cn/simple
     - ray[default,tune]==2.2.0
     # requires mujoco py dependencies libosmesa6-dev libgl1-mesa-glx libglfw3 patchelf
     - free-mujoco-py==2.1.6
@@ -61,5 +62,5 @@ dependencies:
     - pytorchvideo==0.1.5
     # pip package required for jpeg-xl
     - imagecodecs==2022.9.26
-    - r3m @ https://github.com/facebookresearch/r3m/archive/b2334e726887fa0206962d7984c69c5fb09cceab.tar.gz
+    #- r3m @ https://github.com/facebookresearch/r3m/archive/b2334e726887fa0206962d7984c69c5fb09cceab.tar.gz
     - dm-control==1.0.9

@@ -90,11 +90,11 @@ def main(output, render_size, control_hz):
                 # for compatibility
                 keypoint = obs.reshape(2,-1)[0].reshape(-1,2)[:9]
                 data = {
-                    'img': img,
-                    'state': np.float32(state),
-                    'keypoint': np.float32(keypoint),
-                    'action': np.float32(act),
-                    'n_contacts': np.float32([info['n_contacts']])
+                    'img': img,  #视频帧数据。形状通常是 [时间步数, 3, 96, 96]（如果你录了 1000 步，就是 1000 张 96x96 的图片）
+                    'state': np.float32(state),  #机器人的状态（比如抓手的位置 x, y）
+                    'keypoint': np.float32(keypoint),  #物体的关键点坐标（T型块的坐标）
+                    'action': np.float32(act),   #你施加的动作（你鼠标移动的目标位置）
+                    'n_contacts': np.float32([info['n_contacts']])  #每一局游戏结束的索引位置（比如你在第 100 步赢了一次，第 250 步又赢了一次，这里就存着 [100, 250]）
                 }
                 episode.append(data)
                 
