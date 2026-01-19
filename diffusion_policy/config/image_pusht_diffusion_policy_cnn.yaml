@@ -9,7 +9,7 @@ checkpoint:
     monitor_key: test_mean_score
 dataloader:
   batch_size: 64
-  num_workers: 8
+  num_workers: 8   #训练数据加载器的子进程数
   persistent_workers: false
   pin_memory: true
   shuffle: true
@@ -127,11 +127,11 @@ task:
     legacy_test: true
     max_steps: 300
     n_action_steps: 8
-    n_envs: null
+    n_envs: null   #将仿真环境的并行数量
     n_obs_steps: 2
-    n_test: 50
-    n_test_vis: 4
-    n_train: 6
+    n_test: 50     # 测试集评估次数，使用测试集种的随机种子
+    n_test_vis: 4  #
+    n_train: 6  #训练集评估次数，使用训练集中的随机数种子
     n_train_vis: 2
     past_action: false
     test_start_seed: 100000
@@ -167,7 +167,7 @@ training:
   max_train_steps: null
   max_val_steps: null
   num_epochs: 3050
-  resume: true
+  resume: true    #是否接着上次继续训练，可以防止意外中断
   rollout_every: 50
   sample_every: 5
   seed: 42
@@ -176,7 +176,7 @@ training:
   val_every: 1
 val_dataloader:
   batch_size: 64
-  num_workers: 8
+  num_workers: 8  #验证数据加载器的子进程数
   persistent_workers: false
   pin_memory: true
   shuffle: false

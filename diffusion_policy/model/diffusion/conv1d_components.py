@@ -7,7 +7,8 @@ import torch.nn.functional as F
 class Downsample1d(nn.Module):
     def __init__(self, dim):
         super().__init__()
-        self.conv = nn.Conv1d(dim, dim, 3, 2, 1)
+        #       kernel_size=3, stride=2, padding=1
+        self.conv = nn.Conv1d(dim, dim, 3, 2, 1) #刚好能让输出长度精确减半 [batch,channel,horizon] -> [batch,channel,horizon/2]
 
     def forward(self, x):
         return self.conv(x)
@@ -15,7 +16,8 @@ class Downsample1d(nn.Module):
 class Upsample1d(nn.Module):
     def __init__(self, dim):
         super().__init__()
-        self.conv = nn.ConvTranspose1d(dim, dim, 4, 2, 1)
+        #             kernel_size=, stride=2表示滑动步长, padding=1表示对进行裁剪去掉一个      A*w1 A*w2 A*w3 A*w4 
+        self.conv = nn.ConvTranspose1d(dim, dim, 4, 2, 1) #刚好能让输出长度精确翻倍    AB->            B*w1 B*w2 B*w3 B*w4    后进行叠加裁剪 -> A*w2 A*w3+B*w1 A*w4+B*w3 B*w3
 
     def forward(self, x):
         return self.conv(x)

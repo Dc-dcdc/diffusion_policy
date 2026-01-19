@@ -20,43 +20,44 @@ from diffusion_policy.common.pytorch_util import dict_apply, replace_submodules
 
 
 class DiffusionUnetHybridImagePolicy(BaseImagePolicy):
+    #这里都是默认值，具体还得看配置文件中的policy部分
     def __init__(self, 
-            shape_meta: dict,
+            shape_meta: dict, #形状元数据  {'action': {'shape': [2]}, 'obs': {'agent_pos': {'shape': [2], 'type': 'low_dim'}, 'image': {'shape': [3, 96, 96], 'type': 'rgb'}}}
             noise_scheduler: DDPMScheduler,
-            horizon, 
-            n_action_steps, 
-            n_obs_steps,
-            num_inference_steps=None,
-            obs_as_global_cond=True,
-            crop_shape=(76, 76),
-            diffusion_step_embed_dim=256,
-            down_dims=(256,512,1024),
-            kernel_size=5,
-            n_groups=8,
-            cond_predict_scale=True,
-            obs_encoder_group_norm=False,
-            eval_fixed_crop=False,
+            horizon, #预测步数  16
+            n_action_steps, #执行步数  8
+            n_obs_steps, #观测长度  2
+            num_inference_steps=None,  #推理时去噪步数 100
+            obs_as_global_cond=True,  #图像作为条件注入
+            crop_shape=(76, 76), #裁剪，原图96x96
+            diffusion_step_embed_dim=256, #扩散时间步（Time Step）的特征向量维度
+            down_dims=(256,512,1024), #下采样每一层通道数
+            kernel_size=5, #卷积核，每次卷积前后5个时间步信息
+            n_groups=8,  #groupnorm组数
+            cond_predict_scale=True, #在 FiLM调节中，是否预测缩放系数（Scale）和偏移量
+            obs_encoder_group_norm=False, #图像编码器（ResNet）内部是否使用 GroupNorm
+            eval_fixed_crop=False, #True表示固定裁剪  false表示随机裁剪，以模拟相机抖动
             # parameters passed to step
-            **kwargs):
+            **kwargs):   #接收所有未显式列出的参数（防止配置文件里多写参数导致报错）
         super().__init__()
 
         # parse shape_meta
-        action_shape = shape_meta['action']['shape']
-        assert len(action_shape) == 1
-        action_dim = action_shape[0]
-        obs_shape_meta = shape_meta['obs']
+        action_shape = shape_meta['action']['shape'] #获取动作维度  shape_meta = {'action': {'shape': [2]}, 'obs': {'agent_pos': {'shape': [2], 'type': 'low_dim'}, 'image': {'shape': [3, 96, 96], 'type': 'rgb'}}}
+        assert len(action_shape) == 1  #要求是一维，action_shape= [2]
+        action_dim = action_shape[0]  #获取具体动作维度数值，action_dim=2
+        obs_shape_meta = shape_meta['obs']  #obs_shape_meta = {'agent_pos': {'shape': [2], 'type': 'low_dim'}, 'image': {'shape': [3, 96, 96], 'type': 'rgb'}},
         obs_config = {
-            'low_dim': [],
-            'rgb': [],
-            'depth': [],
-            'scan': []
+            'low_dim': [],  #低维状态（如关节角、末端位置、速度） MLP处理
+            'rgb': [],   #彩色图像   resnet/CNN处理
+            'depth': [], #深度图像
+            'scan': []   #激光雷达扫描数据
         }
-        obs_key_shapes = dict()
+        obs_key_shapes = dict()  #获取数据形状   {'agent_pos': [2], 'image': [3, 96, 96]}
         for key, attr in obs_shape_meta.items():
             shape = attr['shape']
             obs_key_shapes[key] = list(shape)
 
-            type = attr.get('type', 'low_dim')
+            type = attr.get('type', 'low_dim') #获取 type 字段，没有则使用默认的low_dim
             if type == 'rgb':
                 obs_config['rgb'].append(key)
             elif type == 'low_dim':
@@ -65,44 +66,45 @@ class DiffusionUnetHybridImagePolicy(BaseImagePolicy):
                 raise RuntimeError(f"Unsupported obs type: {type}")
 
         # get raw robomimic config
-        config = get_robomimic_config(
+        config = get_robomimic_config( #获取一个默认的 robomimic 配置对象
             algo_name='bc_rnn',
             hdf5_type='image',
-            task_name='square',
-            dataset_type='ph')
+            task_name='square', #任务名称
+            dataset_type='ph') #数据集类型Proficient Human，专家演示数据
         
-        with config.unlocked():
+        with config.unlocked(): #临时解锁
             # set config with shape_meta
             config.observation.modalities.obs = obs_config
 
-            if crop_shape is None:
+            if crop_shape is None: #配置图像不裁剪
                 for key, modality in config.observation.encoder.items():
-                    if modality.obs_randomizer_class == 'CropRandomizer':
+                    if modality.obs_randomizer_class == 'CropRandomizer':  #如果默认配置里开启了 CropRandomizer（随机裁剪），将其关闭
                         modality['obs_randomizer_class'] = None
-            else:
+            else: #裁剪
                 # set random crop parameter
                 ch, cw = crop_shape
                 for key, modality in config.observation.encoder.items():
-                    if modality.obs_randomizer_class == 'CropRandomizer':
+                    if modality.obs_randomizer_class == 'CropRandomizer': #找到配置里的 CropRandomizer，并将参数改成裁剪尺寸
                         modality.obs_randomizer_kwargs.crop_height = ch
                         modality.obs_randomizer_kwargs.crop_width = cw
 
         # init global state
-        ObsUtils.initialize_obs_utils_with_config(config)
+        ObsUtils.initialize_obs_utils_with_config(config) #初始化全局观测处理工具
 
-        # load model
+        # load model 
         policy: PolicyAlgo = algo_factory(
-                algo_name=config.algo_name,
-                config=config,
-                obs_key_shapes=obs_key_shapes,
-                ac_dim=action_dim,
-                device='cpu',
+                algo_name=config.algo_name,  #算法名称，即对应什么模型
+                config=config,  #包含模型详细超参数
+                obs_key_shapes=obs_key_shapes, #观测规格即输入   {'agent_pos': [2], 'image': [3, 96, 96]}
+                ac_dim=action_dim, #动作规格即输出
+                device='cpu',  #初始化位置
             )
-
+        #获取观测要用的神经网络模块（视觉编码器）    这里policy，也就是robomimic 库里已经编好了各种网络模型，可以直接获取使用
         obs_encoder = policy.nets['policy'].nets['encoder'].nets['obs']
         
         if obs_encoder_group_norm:
             # replace batch norm with group norm
+            #将批量归一化层替换为组归一化层
             replace_submodules(
                 root_module=obs_encoder,
                 predicate=lambda x: isinstance(x, nn.BatchNorm2d),
@@ -113,6 +115,7 @@ class DiffusionUnetHybridImagePolicy(BaseImagePolicy):
             # obs_encoder.obs_nets['agentview_image'].nets[0].nets
         
         # obs_encoder.obs_randomizers['agentview_image']
+        # 评估时是否固定裁剪
         if eval_fixed_crop:
             replace_submodules(
                 root_module=obs_encoder,
@@ -127,19 +130,19 @@ class DiffusionUnetHybridImagePolicy(BaseImagePolicy):
             )
 
         # create diffusion model
-        obs_feature_dim = obs_encoder.output_shape()[0]
-        input_dim = action_dim + obs_feature_dim
-        global_cond_dim = None
-        if obs_as_global_cond:
-            input_dim = action_dim
-            global_cond_dim = obs_feature_dim * n_obs_steps
+        obs_feature_dim = obs_encoder.output_shape()[0] #获取输出的特征向量维度  66
+        input_dim = action_dim + obs_feature_dim  #老款DP  动作和观测一起输入，一起输出
+        global_cond_dim = None  #不需要额外的全局条件输入端口
+        if obs_as_global_cond:  #如果观测作为条件，即新款DP
+            input_dim = action_dim #输入只有动作
+            global_cond_dim = obs_feature_dim * n_obs_steps  #将观测作为条件进行输入，维度=观测维度 x 过去帧数  132
 
         model = ConditionalUnet1D(
             input_dim=input_dim,
             local_cond_dim=None,
-            global_cond_dim=global_cond_dim,
-            diffusion_step_embed_dim=diffusion_step_embed_dim,
-            down_dims=down_dims,
+            global_cond_dim=global_cond_dim,  #
+            diffusion_step_embed_dim=diffusion_step_embed_dim,   #时间步编码长度
+            down_dims=down_dims,  #下采样每一层通道数  [512, 1024, 2048]
             kernel_size=kernel_size,
             n_groups=n_groups,
             cond_predict_scale=cond_predict_scale
@@ -332,7 +335,7 @@ class DiffusionUnetHybridImagePolicy(BaseImagePolicy):
         # apply conditioning
         noisy_trajectory[condition_mask] = cond_data[condition_mask]
         
-        # Predict the noise residual
+        # Predict the noise residual 预测的噪声值
         pred = self.model(noisy_trajectory, timesteps, 
             local_cond=local_cond, global_cond=global_cond)
 

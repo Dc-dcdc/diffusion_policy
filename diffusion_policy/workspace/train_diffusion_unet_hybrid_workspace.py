@@ -1,11 +1,12 @@
+# 强行把当前的运行环境“搬”回项目根目录，以解决导包报错（ModuleNotFoundError）和文件路径找不到**的问题
 if __name__ == "__main__":
     import sys
     import os
     import pathlib
 
-    ROOT_DIR = str(pathlib.Path(__file__).parent.parent.parent)
-    sys.path.append(ROOT_DIR)
-    os.chdir(ROOT_DIR)
+    ROOT_DIR = str(pathlib.Path(__file__).parent.parent.parent) #回到最外层根目录
+    sys.path.append(ROOT_DIR) #解决import找不到包的问题
+    os.chdir(ROOT_DIR) #解决文件路径问题
 
 import os
 import hydra
@@ -29,19 +30,20 @@ from diffusion_policy.common.pytorch_util import dict_apply, optimizer_to
 from diffusion_policy.model.diffusion.ema_model import EMAModel
 from diffusion_policy.model.common.lr_scheduler import get_scheduler
 
+# 向 OmegaConf 配置系统注册一个名为 "eval" 的自定义解析器，允许yaml文件中执行python代码
 OmegaConf.register_new_resolver("eval", eval, replace=True)
 
 class TrainDiffusionUnetHybridWorkspace(BaseWorkspace):
-    include_keys = ['global_step', 'epoch']
+    include_keys = ['global_step', 'epoch'] #额外保存全局步数和当前轮数
 
-    def __init__(self, cfg: OmegaConf, output_dir=None):
+    def __init__(self, cfg: OmegaConf, output_dir=None): #接收一个 OmegaConf 对象，包含了所有的训练配置（来源于 yaml 文件）
         super().__init__(cfg, output_dir=output_dir)
 
         # set seed
-        seed = cfg.training.seed
-        torch.manual_seed(seed)
-        np.random.seed(seed)
-        random.seed(seed)
+        seed = cfg.training.seed #配置文件中读取随机数种子
+        torch.manual_seed(seed) #设置 PyTorch 的种子（影响神经网络权重的初始化、Dropout 等）
+        np.random.seed(seed)  #设置 NumPy 的种子（影响数据预处理、环境随机性）
+        random.seed(seed) #设置 Python 标准库 random 的种子
 
         # configure model
         self.model: DiffusionUnetHybridImagePolicy = hydra.utils.instantiate(cfg.policy)

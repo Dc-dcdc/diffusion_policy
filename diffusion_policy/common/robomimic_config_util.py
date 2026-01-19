@@ -10,8 +10,8 @@ from robomimic.scripts.generate_paper_configs import (
 def get_robomimic_config(
         algo_name='bc_rnn', 
         hdf5_type='low_dim', 
-        task_name='square', 
-        dataset_type='ph'
+        task_name='square', #任务名称
+        dataset_type='ph' #数据集类型Proficient Human，专家演示数据
     ):
     base_dataset_dir = '/tmp/null'
     filter_key = None

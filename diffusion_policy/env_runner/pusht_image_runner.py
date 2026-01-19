@@ -178,7 +178,7 @@ class PushTImageRunner(BaseImageRunner):
             past_action = None
             policy.reset()
 
-            pbar = tqdm.tqdm(total=self.max_steps, desc=f"Eval PushtImageRunner {chunk_idx+1}/{n_chunks}", 
+            pbar = tqdm.tqdm(total=self.max_steps, desc=f"Eval PushtImageRunner {chunk_idx+1}/{n_chunks}",  #图像版仿真评估
                 leave=False, mininterval=self.tqdm_interval_sec)
             done = False
             while not done:
