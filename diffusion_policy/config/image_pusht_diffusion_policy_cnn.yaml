@@ -20,7 +20,7 @@ ema:
   max_value: 0.9999
   min_value: 0.0
   power: 0.75
-  update_after_step: 0
+  update_after_step: 0 #前多少步不由旧模型进行融合，全听新模型的
 exp_name: default
 horizon: 16
 keypoint_visible_rate: 1.0
@@ -28,7 +28,7 @@ logging:
   group: null
   id: null
   mode: online
-  name: 2023.01.16-20.20.06_train_diffusion_unet_hybrid_pusht_image
+  name: "${now:%Y.%m.%d-%H.%M.%S}_train_diffusion_unet_hybrid_pusht_image"
   project: diffusion_policy_debug
   resume: true
   tags:
@@ -36,8 +36,8 @@ logging:
   - pusht_image
   - default
 multi_run:
-  run_dir: data/outputs/2023.01.16/20.20.06_train_diffusion_unet_hybrid_pusht_image
-  wandb_name_base: 2023.01.16-20.20.06_train_diffusion_unet_hybrid_pusht_image
+  run_dir: "data/outputs/${now:%Y.%m.%d}/${now:%H.%M.%S}_train_diffusion_unet_hybrid_pusht_image"
+  wandb_name_base: "${now:%Y.%m.%d-%H.%M.%S}_train_diffusion_unet_hybrid_pusht_image"
 n_action_steps: 8
 n_latency_steps: 0
 n_obs_steps: 2
@@ -46,8 +46,8 @@ obs_as_global_cond: true
 optimizer:
   _target_: torch.optim.AdamW
   betas:
-  - 0.95
-  - 0.999
+  - 0.95  #一阶矩估计（即梯度的平均值/惯性）
+  - 0.999 #二阶矩估计（即梯度平方的平均值/自适应步长）
   eps: 1.0e-08
   lr: 0.0001
   weight_decay: 1.0e-06
@@ -76,9 +76,9 @@ policy:
     beta_start: 0.0001
     clip_sample: true
     num_train_timesteps: 100
-    prediction_type: epsilon
-    variance_type: fixed_small
-  num_inference_steps: 100
+    prediction_type: epsilon    #预测类型：噪声
+    variance_type: fixed_small  #固定的、较小的方差
+  num_inference_steps: 100 #推理步数
   obs_as_global_cond: true
   obs_encoder_group_norm: true
   shape_meta:
@@ -96,44 +96,44 @@ policy:
         - 96
         - 96
         type: rgb
-shape_meta:
-  action:
+shape_meta:  #输入输出的形状元数据
+  action: 
     shape:
     - 2
   obs:
     agent_pos:
       shape:
       - 2
-      type: low_dim
+      type: low_dim  #2维
     image:
       shape:
       - 3
       - 96
       - 96
-      type: rgb
+      type: rgb  #压缩至64维  在diffusion_policy/model/vision/multi_image_obs_encoder.py中
 task:
   dataset:
     _target_: diffusion_policy.dataset.pusht_image_dataset.PushTImageDataset
     horizon: 16
-    max_train_episodes: 90
-    pad_after: 7
-    pad_before: 1
+    max_train_episodes: 90  #最大训练轨迹数量
+    pad_after: 7  #补齐后7帧  动作执行补偿  这里取7而不是15，避免执行最后补充的重复样本点
+    pad_before: 1 #补齐前1帧  观测历史补偿
     seed: 42
-    val_ratio: 0.02
+    val_ratio: 0.02 #验证集比例
     zarr_path: data/pusht/pusht_cchi_v7_replay.zarr
-  env_runner:
+  env_runner: #仿真环境运行策略参数
     _target_: diffusion_policy.env_runner.pusht_image_runner.PushTImageRunner
     fps: 10
     legacy_test: true
     max_steps: 300
     n_action_steps: 8
     n_envs: null   #将仿真环境的并行数量
-    n_obs_steps: 2
+    n_obs_steps: 2 #
     n_test: 50     # 测试集评估次数，使用测试集种的随机种子
-    n_test_vis: 4  #
+    n_test_vis: 4  #评估后保存的视频数
     n_train: 6  #训练集评估次数，使用训练集中的随机数种子
-    n_train_vis: 2
-    past_action: false
+    n_train_vis: 2  #评估后保存的视频数
+    past_action: false  #是否输入历史动作
     test_start_seed: 100000
     train_start_seed: 0
   image_shape:
@@ -158,7 +158,7 @@ task:
         type: rgb
 task_name: pusht_image
 training:
-  checkpoint_every: 50
+  checkpoint_every: 50 #多少轮次保存一次参数，用于恢复训练
   debug: false
   device: cuda:0
   gradient_accumulate_every: 1

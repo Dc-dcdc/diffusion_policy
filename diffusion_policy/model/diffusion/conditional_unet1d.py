@@ -35,14 +35,13 @@ class ConditionalResidualBlock1D(nn.Module):
         self.out_channels = out_channels
         self.cond_encoder = nn.Sequential(
             nn.Mish(),  # 1. 激活函数
-            nn.Linear(cond_dim, cond_channels), # 2. 线性投影：将条件维数维 对齐 模型输出的维输，以便后续对模型输出x进行进一步调节 y = scale*x + bisa
+            nn.Linear(cond_dim, cond_channels), # 2. 线性投影：将条件维数维 对齐 模型输出的维输66*2->256，以便后续对模型输出x进行进一步调节 y = scale*x + bisa
             Rearrange('batch t -> batch t 1'),  # 3. 重排形状：适配 1D 卷积格式   [16, 512]->[16, 512, 1]
         )
 
         # make sure dimensions compatible
         # 确保维度对齐，以使用残差链接                            一维卷积核
-        self.residual_conv = nn.Conv1d(in_channels, out_channels, 1) \ 
-            if in_channels != out_channels else nn.Identity() #如果输入输出维度一样则无需处理，否则将输入通道数对齐输出通道数
+        self.residual_conv = nn.Conv1d(in_channels, out_channels, 1) if in_channels != out_channels else nn.Identity() #如果输入输出维度一样则无需处理，否则将输入通道数对齐输出通道数
 
     def forward(self, x, cond):# x = [16, 64, 16]=[不同演示数据的片段数量batch，通道维数channel，序列长度horizon] 
         '''
@@ -243,6 +242,6 @@ class ConditionalUnet1D(nn.Module):
 
         x = self.final_conv(x)  #[64, 512, 16] -> [64, 2, 16]
 
-        x = einops.rearrange(x, 'b t h -> b h t')
+        x = einops.rearrange(x, 'b t h -> b h t') #[64, 2, 16] -> [64, 16, 2]
         return x
 

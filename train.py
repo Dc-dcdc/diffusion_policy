@@ -30,7 +30,7 @@ def main(cfg: OmegaConf):
     # will use the same time.
     OmegaConf.resolve(cfg)  #计算所有动态变量并固定（如时间戳 ${now:}）
 
-    cls = hydra.utils.get_class(cfg._target_) #Hydra 根据配置中的 _target_ 字段，动态导入该类。
+    cls = hydra.utils.get_class(cfg._target_) #获取相对应的类     Hydra 根据配置中的 _target_ 字段（import点号.之前的部分，获取点号.之后的属性），动态导入该类。
     workspace: BaseWorkspace = cls(cfg) #实例化
     workspace.run()
 

@@ -72,7 +72,7 @@ class MultiStepWrapper(gym.Wrapper):
             max_episode_steps=None,
             reward_agg_method='max'
         ):
-        super().__init__(env)
+        super().__init__(env) 
         self._action_space = repeated_space(env.action_space, n_action_steps)
         self._observation_space = repeated_space(env.observation_space, n_obs_steps)
         self.max_episode_steps = max_episode_steps
@@ -88,28 +88,31 @@ class MultiStepWrapper(gym.Wrapper):
     
     def reset(self):
         """Resets the environment using kwargs."""
+        # 物理引擎把机器人瞬移回原点，把 T 型块随机放到一个新的位置
         obs = super().reset()
 
         self.obs = deque([obs], maxlen=self.n_obs_steps+1)
+        # 把记录奖励、结束标志和辅助信息的列表清空，为新的一轮 Episode 腾出空间
         self.reward = list()
         self.done = list()
         self.info = defaultdict(lambda : deque(maxlen=self.n_obs_steps+1))
 
-        obs = self._get_obs(self.n_obs_steps)
+        obs = self._get_obs(self.n_obs_steps) #获取观测值  确保帧数足够，第一帧不够会复制补齐
         return obs
 
     def step(self, action):
         """
         actions: (n_action_steps,) + action_shape
         """
-        for act in action:
+        for act in action: #一步步执行动作
             if len(self.done) > 0 and self.done[-1]:
                 # termination
                 break
-            observation, reward, done, info = super().step(act)
+            observation, reward, done, info = super().step(act) #执行一步动作  diffusion_policy/env/pusht/pusht_env.py中
 
-            self.obs.append(observation)
-            self.reward.append(reward)
+            self.obs.append(observation) #记录观测
+            self.reward.append(reward)  #记录奖励
+            #超时或最大轨迹直接截断
             if (self.max_episode_steps is not None) \
                 and (len(self.reward) >= self.max_episode_steps):
                 # truncation
@@ -118,11 +121,12 @@ class MultiStepWrapper(gym.Wrapper):
             self._add_info(info)
 
         observation = self._get_obs(self.n_obs_steps)
-        reward = aggregate(self.reward, self.reward_agg_method)
-        done = aggregate(self.done, 'max')
+        reward = aggregate(self.reward, self.reward_agg_method) #取最大奖励
+        done = aggregate(self.done, 'max') #取最大值，即有一步触发done即可
         info = dict_take_last_n(self.info, self.n_obs_steps)
         return observation, reward, done, info
 
+    #获取最后n_steps帧观测值
     def _get_obs(self, n_steps=1):
         """
         Output (n_steps,) + obs_shape

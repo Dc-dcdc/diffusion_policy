@@ -21,7 +21,7 @@ def create_indices(
             continue
         start_idx = 0
         if i > 0:
-            start_idx = episode_ends[i-1]
+            start_idx = episode_ends[i-1] #每条数据在总数据中的起始索引
         end_idx = episode_ends[i]
         episode_length = end_idx - start_idx
         
@@ -29,13 +29,13 @@ def create_indices(
         max_start = episode_length - sequence_length + pad_after
         
         # range stops one idx before end
-        for idx in range(min_start, max_start+1):
+        for idx in range(min_start, max_start+1): #[-1,episode_length-16+7]
             buffer_start_idx = max(idx, 0) + start_idx
             buffer_end_idx = min(idx+sequence_length, episode_length) + start_idx
-            start_offset = buffer_start_idx - (idx+start_idx)
-            end_offset = (idx+sequence_length+start_idx) - buffer_end_idx
-            sample_start_idx = 0 + start_offset
-            sample_end_idx = sequence_length - end_offset
+            start_offset = buffer_start_idx - (idx+start_idx)  #实际读的起点 - 想要读的起点   想读 idx = -1，实际读了 0  $0 - (-1) = 1$，左边少读了 1 帧，后续在前面需要补一个pad
+            end_offset = (idx+sequence_length+start_idx) - buffer_end_idx # 想要读的终点 - 实际读的终点
+            sample_start_idx = 0 + start_offset #真数据填充起点
+            sample_end_idx = sequence_length - end_offset #真数据填充终点
             if debug:
                 assert(start_offset >= 0)
                 assert(end_offset >= 0)
@@ -74,6 +74,7 @@ def downsample_mask(mask, max_n, seed=0):
         assert np.sum(train_mask) == n_train
     return train_mask
 
+# 样本的索引值是累加的   读到样本末尾时，会使用padding填充，不会和下一条样本进行混合读取
 class SequenceSampler:
     def __init__(self, 
         replay_buffer: ReplayBuffer, 
@@ -99,7 +100,10 @@ class SequenceSampler:
             episode_mask = np.ones(episode_ends.shape, dtype=bool)
 
         if np.any(episode_mask):
-            indices = create_indices(episode_ends, 
+            #                      在样本中索引起点     在样本中索引终点   真实样本填充起点     真实样本填充终点
+            # 生成索引，返回每个样本的[buffer_start_idx, buffer_end_idx, sample_start_idx, sample_end_idx]   例[88, 100, 0, 12] 12<16 则后面补pad   [0, 4, 1, 5]，这里1>0,前面要补pad
+            indices = create_indices(
+                episode_ends,  #每条轨迹的终点，防止跨界 例：[163,305,454,612,751]
                 sequence_length=sequence_length, 
                 pad_before=pad_before, 
                 pad_after=pad_after,
@@ -114,10 +118,10 @@ class SequenceSampler:
         self.sequence_length = sequence_length
         self.replay_buffer = replay_buffer
         self.key_first_k = key_first_k
-    
+
     def __len__(self):
         return len(self.indices)
-        
+
     def sample_sequence(self, idx):
         buffer_start_idx, buffer_end_idx, sample_start_idx, sample_end_idx \
             = self.indices[idx]
@@ -125,29 +129,35 @@ class SequenceSampler:
         for key in self.keys:
             input_arr = self.replay_buffer[key]
             # performance optimization, avoid small allocation if possible
+            #低维动作数据、agentpos 16帧全部读取
             if key not in self.key_first_k:
                 sample = input_arr[buffer_start_idx:buffer_end_idx]
+            #图像数据，只读前2帧，提升计算速度
             else:
                 # performance optimization, only load used obs steps
                 n_data = buffer_end_idx - buffer_start_idx
-                k_data = min(self.key_first_k[key], n_data)
+                k_data = min(self.key_first_k[key], n_data) #配置长度(2)和理论长度(16)取小的
                 # fill value with Nan to catch bugs
                 # the non-loaded region should never be used
                 sample = np.full((n_data,) + input_arr.shape[1:], 
                     fill_value=np.nan, dtype=input_arr.dtype)
                 try:
-                    sample[:k_data] = input_arr[buffer_start_idx:buffer_start_idx+k_data]
+                    sample[:k_data] = input_arr[buffer_start_idx:buffer_start_idx+k_data] #取前两帧，剩余为nan
                 except Exception as e:
                     import pdb; pdb.set_trace()
             data = sample
             if (sample_start_idx > 0) or (sample_end_idx < self.sequence_length):
+                # 1. 创建一个全黑的画布 (zeros)
                 data = np.zeros(
                     shape=(self.sequence_length,) + input_arr.shape[1:],
                     dtype=input_arr.dtype)
-                if sample_start_idx > 0:
-                    data[:sample_start_idx] = sample[0]
-                if sample_end_idx < self.sequence_length:
-                    data[sample_end_idx:] = sample[-1]
-                data[sample_start_idx:sample_end_idx] = sample
+                # 2. 头部填充 (Pad Before)
+                if sample_start_idx > 0:#
+                    data[:sample_start_idx] = sample[0] # 复制第一帧
+                # 3. 尾部填充 (Pad After)
+                if sample_end_idx < self.sequence_length:#数据不够长
+                    data[sample_end_idx:] = sample[-1] # 复制最后一帧，填满剩下位置
+                # 4. 填入真实数据
+                data[sample_start_idx:sample_end_idx] = sample  #填入剩余数据，组成完整数据
             result[key] = data
         return result

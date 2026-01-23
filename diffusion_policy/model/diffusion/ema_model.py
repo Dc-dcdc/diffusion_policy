@@ -41,11 +41,12 @@ class EMAModel:
         self.decay = 0.0
         self.optimization_step = 0
 
+    #计算衰减率   即旧模型的权重值，随着步数增加而变大
     def get_decay(self, optimization_step):
         """
         Compute the decay factor for the exponential moving average.
         """
-        step = max(0, optimization_step - self.update_after_step - 1)
+        step = max(0, optimization_step - self.update_after_step - 1) #前 update_after_step步是0，即全由新模型组成
         value = 1 - (1 + step / self.inv_gamma) ** -self.power
 
         if step <= 0:
@@ -55,7 +56,7 @@ class EMAModel:
 
     @torch.no_grad()
     def step(self, new_model):
-        self.decay = self.get_decay(self.optimization_step)
+        self.decay = self.get_decay(self.optimization_step) #
 
         # old_all_dataptrs = set()
         # for param in new_model.parameters():
@@ -74,14 +75,14 @@ class EMAModel:
                 # if data_ptr != 0:
                 #     all_dataptrs.add(data_ptr)
 
-                if isinstance(module, _BatchNorm):
+                if isinstance(module, _BatchNorm): #BatchNorm 层
                     # skip batchnorms
                     ema_param.copy_(param.to(dtype=ema_param.dtype).data)
-                elif not param.requires_grad:
+                elif not param.requires_grad:  #无需训练的部分
                     ema_param.copy_(param.to(dtype=ema_param.dtype).data)
-                else:
+                else: #可训练参数
                     ema_param.mul_(self.decay)
-                    ema_param.add_(param.data.to(dtype=ema_param.dtype), alpha=1 - self.decay)
+                    ema_param.add_(param.data.to(dtype=ema_param.dtype), alpha=1 - self.decay) #加权平均
 
         # verify that iterating over module and then parameters is identical to parameters recursively.
         # assert old_all_dataptrs == all_dataptrs

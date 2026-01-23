@@ -108,29 +108,29 @@ class PushTEnv(gym.Env):
 
     def step(self, action):
         dt = 1.0 / self.sim_hz
-        self.n_contact_points = 0
-        n_steps = self.sim_hz // self.control_hz
+        self.n_contact_points = 0 #接触点数量，抓取任务中越多越好
+        n_steps = self.sim_hz // self.control_hz #一个控制指令 需要 底层物理跑多少步  100/10取整，一个动作指令，物理层需要执行10步
         if action is not None:
             self.latest_action = action
-            for i in range(n_steps):
-                # Step PD control.
+            for i in range(n_steps): 
+                # Step PD control. PD 控制器
                 # self.agent.velocity = self.k_p * (act - self.agent.position)    # P control works too.
                 acceleration = self.k_p * (action - self.agent.position) + self.k_v * (Vec2d(0, 0) - self.agent.velocity)
-                self.agent.velocity += acceleration * dt
+                self.agent.velocity += acceleration * dt #微分项
 
                 # Step physics.
-                self.space.step(dt)
+                self.space.step(dt) #物理更新：算出加速度 -> 更新速度 -> 让 PyMunk 引擎推演这一微步的位置变化
 
         # compute reward
-        goal_body = self._get_goal_pose_body(self.goal_pose)
-        goal_geom = pymunk_to_shapely(goal_body, self.block.shapes)
-        block_geom = pymunk_to_shapely(self.block, self.block.shapes)
+        goal_body = self._get_goal_pose_body(self.goal_pose) 
+        goal_geom = pymunk_to_shapely(goal_body, self.block.shapes)   # 目标形状（T字）
+        block_geom = pymunk_to_shapely(self.block, self.block.shapes) # 当前方块形状（T字）
 
-        intersection_area = goal_geom.intersection(block_geom).area
+        intersection_area = goal_geom.intersection(block_geom).area # 计算交叠面积
         goal_area = goal_geom.area
-        coverage = intersection_area / goal_area
-        reward = np.clip(coverage / self.success_threshold, 0, 1)
-        done = coverage > self.success_threshold
+        coverage = intersection_area / goal_area #计算交叠面积百分比
+        reward = np.clip(coverage / self.success_threshold, 0, 1) #计算奖励 当前覆盖率 / 成功所需覆盖率 
+        done = coverage > self.success_threshold #覆盖率超过阈值，环境就判定任务成功
 
         observation = self._get_obs()
         info = self._get_info()
@@ -169,7 +169,7 @@ class PushTEnv(gym.Env):
         return body
     
     def _get_info(self):
-        n_steps = self.sim_hz // self.control_hz
+        n_steps = self.sim_hz // self.control_hz  # 
         n_contact_points_per_step = int(np.ceil(self.n_contact_points / n_steps))
         info = {
             'pos_agent': np.array(self.agent.position),

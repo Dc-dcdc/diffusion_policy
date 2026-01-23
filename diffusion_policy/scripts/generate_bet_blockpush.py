@@ -27,7 +27,7 @@ from diffusion_policy.env.block_pushing.oracles.multimodal_push_oracle import Mu
 def main(output, n_episodes, chunk_length):
 
     buffer = ReplayBuffer.create_empty_numpy()
-    env = TimeLimit(GymWrapper(BlockPushMultimodal()), duration=350)
+    env = TimeLimit(GymWrapper(BlockPushMultimodal()), duration=350) #实例化核心仿真环境  每个episode最多350步
     for i in tqdm(range(n_episodes)):
         print(i)
         obs_history = list()
@@ -35,11 +35,11 @@ def main(output, n_episodes, chunk_length):
 
         env.seed(i)
         policy = MultimodalOrientedPushOracle(env)
-        time_step = env.reset()
+        time_step = env.reset() #重置环境，返回初始的时间步（time_step），其中包含初始观测值
         policy_state = policy.get_initial_state(1)
         while True:
-            action_step = policy.action(time_step, policy_state)
-            obs = np.concatenate(list(time_step.observation.values()), axis=-1)
+            action_step = policy.action(time_step, policy_state) #专家策略根据当前的 time_step（包含观测）和 policy_state 计算下一步的动作
+            obs = np.concatenate(list(time_step.observation.values()), axis=-1) #提取字典中所有观测值并拼接
             action = action_step.action
             obs_history.append(obs)
             action_history.append(action)
@@ -53,8 +53,8 @@ def main(output, n_episodes, chunk_length):
         action_history = np.array(action_history)
 
         episode = {
-            'obs': obs_history,
-            'action': action_history
+            'obs': obs_history, # [T, 16]
+            'action': action_history # [T, 2]
         }
         buffer.add_episode(episode)
     
