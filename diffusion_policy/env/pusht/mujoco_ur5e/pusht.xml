@@ -1,0 +1,93 @@
+<mujoco model="pusht">
+  <include file="ur5e.xml"/>
+  <include file="table_with_pusht.xml"/>
+
+  <option timestep="0.0005" integrator="implicitfast" iterations="50" tolerance="1e-5"/>
+  
+  <statistic center="0.3 0 0.4" extent="0.8"/>
+
+  <!-- <visual>
+    <headlight diffuse="0.6 0.6 0.6" ambient="0.1 0.1 0.1" specular="0 0 0"/>
+    <rgba haze="0.15 0.25 0.35 1"/>
+    <global azimuth="120" elevation="-20"/>
+  </visual> -->
+
+  <visual>
+           <!-- 环境光的颜色和强度，1最强     漫反射颜色和强度       高光反射属性-->
+    <headlight ambient="0.4 0.4 0.4" diffuse="0.4 0.4 0.4" specular="0 0 0" active="1"/>
+
+    <global azimuth="180" elevation="-20" offwidth="1920" offheight="1080"/>
+
+    <quality shadowsize="4096"/>
+  </visual>
+
+  <!-- <default>
+    <geom specular="0.1" shininess="0.2" rgba="0.9 0.9 0.9 1"/>
+  </default> -->
+
+  <asset>
+    <!-- 天空盒 -->
+    <texture type="skybox" builtin="gradient" rgb1="0.3 0.5 0.7" rgb2="0 0 0" width="512" height="3072"/>
+    <!-- 地面 -->
+    <texture type="2d" name="groundplane" builtin="checker" mark="edge" rgb1="0.2 0.3 0.4" rgb2="0.1 0.2 0.3"
+      markrgb="0.8 0.8 0.8" width="300" height="300"/>
+    <material name="groundplane" texture="groundplane" texuniform="true" texrepeat="5 5" reflectance="0.2"/>
+  </asset>
+
+  <worldbody>
+    <!-- <geom name="floor" size="10 10 0.1" type="plane" material="grid"/> -->
+    <!-- <light pos="0 0.5 1.5" dir="0 0 -1" directional="true"/> -->
+    <light name="light_left" directional="true" 
+               pos="0.5 0.8 2.5" dir="0.1 -0.5 -1" 
+               diffuse="0.3 0.3 0.3" specular="0 0 0" 
+               castshadow="true"/>
+
+    <light name="light_right" directional="true" 
+               pos="0.5 -0.8 2.5" dir="0.1 0.5 -1" 
+               diffuse="0.3 0.3 0.3" specular="0 0 0" 
+               castshadow="true"/>
+
+    <light name="up_right" directional="true" 
+               pos="1.0 0 2.5" dir="-0.5 0 -1" 
+               diffuse="0.3 0.3 0.3" specular="0 0 0" 
+               castshadow="true"/>
+    <geom name="floor" size="0 0 0.05" type="plane" material="groundplane"/>
+    <camera name="Front_Camera" pos="1.1 0 1.6" euler="0 0.75 1.5708" mode="fixed" fovy="50" />
+    <camera name="Top_down_Camera" pos="0.5 0 2.4" euler="0 0.0 1.5708" mode="fixed" fovy="45" />
+    <body name="viz_world_frame" pos="0 0 0">
+        <geom type="sphere" size="0.01" rgba="1 1 1 0.5" contype="0" conaffinity="0"/>
+        
+        <geom type="cylinder" fromto="0 0 0 0.2 0 0" size="0.003" rgba="1 0 0 0.5" contype="0" conaffinity="0"/>
+        <geom type="cylinder" fromto="0 0 0 0 0.2 0" size="0.003" rgba="0 1 0 0.5" contype="0" conaffinity="0"/>
+        <geom type="cylinder" fromto="0 0 0 0 0 0.2" size="0.003" rgba="0 0 1 0.5" contype="0" conaffinity="0"/>
+        
+        <site name="World" pos="0.22 0 0" size="0.01" rgba="0 0 0 0" type="sphere"/>
+    </body>
+    <!-- 动捕 ： #mocap="true"精准模式，无动力学--> 
+    <!-- <body name="mocap_target" pos="0.3 0.4 1.0" euler="0 0 0"  mocap="true"> 
+        <geom type="sphere" size="0.02" rgba="0 1 0 0.5" contype="0" conaffinity="0"/>
+    </body> -->
+    <body name="mocap_target" pos="0.3 0.4 1.0" euler="0 0 0" mocap="true">
+        <geom type="sphere" size="0.006" rgba="1 1 1 1" contype="0" conaffinity="0"/>
+
+        <geom type="cylinder" fromto="0 0 0 0.1 0 0" size="0.005" rgba="1 0 0 0" contype="0" conaffinity="0"/>
+
+        <geom type="cylinder" fromto="0 0 0 0 0.1 0" size="0.005" rgba="0 1 0 0" contype="0" conaffinity="0"/>
+
+        <geom type="cylinder" fromto="0 0 0 0 0 0.1" size="0.005" rgba="0 0 1 0" contype="0" conaffinity="0"/>
+    </body>
+  </worldbody>
+
+  <equality>
+      <weld body1="mocap_target" body2="tool_pusher" 
+        solref="0.005 1" solimp="0.99 0.999 0.001"  relpose="-0 0 -0.2 1 0 0 0"/>
+  </equality>
+              <!--       -->
+
+<!-- 有include顺序决定 -->
+  <keyframe>
+    <key name="home" qpos="3.1415 -1.5708 2 -2 -1.5708 0 
+                          0.65 0.15 0.95  0.999 0 0 0.026" ctrl="3.1415 -1.5708 2 -2 -1.5708 0 "/>
+    <!-- <key name="home" qpos="-1.5708 -1.5708 -1.5708 -1.5708 -1.5708 0" ctrl="-1.5708 -1.5708 -1.5708 -1.5708 -1.5708 0"/> -->
+  </keyframe>
+</mujoco> 

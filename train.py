@@ -1,7 +1,11 @@
 """
 Usage:
 Training:
-python train.py --config-name=train_diffusion_lowdim_workspace
+python train.py --config-name=train_diffusion_unet_mujoco_image_workspace task.dataset_path=data/demo_pusht_mujoco_plus
+
+恢复训练：
+python train.py hydra.run.dir='/home/dc/diffusion_policy/data/outputs/2026.02.02/20.27.04_train_diffusion_unet_image_real_image' \
+    training.resume=True
 """
 
 import sys
@@ -33,6 +37,8 @@ def main(cfg: OmegaConf):
     cls = hydra.utils.get_class(cfg._target_) #获取相对应的类     Hydra 根据配置中的 _target_ 字段（import点号.之前的部分，获取点号.之后的属性），动态导入该类。
     workspace: BaseWorkspace = cls(cfg) #实例化
     workspace.run()
+
+
 
 if __name__ == "__main__":
      main()

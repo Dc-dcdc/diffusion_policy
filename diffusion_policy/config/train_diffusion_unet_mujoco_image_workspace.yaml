@@ -1,9 +1,9 @@
 defaults:
   - _self_
-  - task: real_pusht_image
+  - task: mujoco_pusht_image
 
 name: train_diffusion_unet_image
-_target_: diffusion_policy.workspace.train_diffusion_unet_image_workspace.TrainDiffusionUnetImageWorkspace
+_target_: diffusion_policy.workspace.train_diffusion_unet_mujoco_workspace.TrainDiffusionUnetImageWorkspace
 
 task_name: ${task.name}
 shape_meta: ${task.shape_meta}
@@ -19,7 +19,8 @@ keypoint_visible_rate: 1.0
 obs_as_global_cond: True
 
 policy:
-  _target_: diffusion_policy.policy.diffusion_unet_image_policy.DiffusionUnetImagePolicy
+  _target_: diffusion_policy.policy.diffusion_unet_image_policy.DiffusionUnetImagePolicy 
+  # _target_: diffusion_policy.policy.diffusion_unet_mujoco_image_policy.DiffusionUnetMujocoImagePolicy  
 
   shape_meta: ${shape_meta}
   
@@ -44,7 +45,7 @@ policy:
       name: resnet18
       weights: null
     resize_shape: [240, 320]
-    crop_shape: [216, 288] # ch, cw 240x320 90%
+    crop_shape: [216, 288] # ch, cw 240x320 90% [216, 288]
     random_crop: True
     use_group_norm: True
     share_rgb_model: False
@@ -110,10 +111,10 @@ training:
   freeze_encoder: False
   # training loop control
   # in epochs
-  rollout_every: 50
-  checkpoint_every: 50
-  val_every: 1
-  sample_every: 5
+  rollout_every: 1  #仿真测试频率
+  checkpoint_every: 10  
+  val_every: 1 #验证集评估频率
+  sample_every: 5 #采样频率
   # steps per epoch
   max_train_steps: null
   max_val_steps: null

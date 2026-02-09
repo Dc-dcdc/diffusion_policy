@@ -260,6 +260,21 @@ python eval_real_robot.py -i data/outputs/blah/checkpoints/latest.ckpt -o data/e
 ```
 Press "C" to start evaluation (handing control over to the policy). Press "S" to stop the current episode.
 
+## ✨ Demo, Training and Eval on a mujoco Robot
+使用鼠标控制动捕采集数据，里面有默认保存地址，可以进行修改
+```console
+python demo_sim_robot.py -o data/demo_pusht_mujoco
+```
+使用mujoco环境中采集的数据进行训练
+```console
+python train.py --config-name=train_diffusion_unet_mujoco_image_workspace task.dataset_path=data/demo_pusht_mujoco_plus
+```
+训练后的数据会存在data/output/对应日期 中，输入对应checkpoints文件进行评估
+```console
+python demo_eval_robot.py -c data/outputs/2026.02.05/10.26.24_train_diffusion_unet_image_mujoco_image/checkpoints/epoch=0790-train_loss=0.000.ckpt
+```
+
+
 ## 🗺️ Codebase Tutorial
 This codebase is structured under the requirement that:
 1. implementing `N` tasks and `M` methods will only require `O(N+M)` amount of code instead of `O(N*M)`

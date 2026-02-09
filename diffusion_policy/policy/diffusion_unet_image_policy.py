@@ -36,7 +36,7 @@ class DiffusionUnetImagePolicy(BaseImagePolicy):
         assert len(action_shape) == 1
         action_dim = action_shape[0]
         # get feature dim
-        obs_feature_dim = obs_encoder.output_shape()[0]
+        obs_feature_dim = obs_encoder.output_shape()[0] #获取观测编码输出的特征向量维度
 
         # create diffusion model
         input_dim = action_dim + obs_feature_dim
@@ -148,6 +148,7 @@ class DiffusionUnetImagePolicy(BaseImagePolicy):
             nobs_features = self.obs_encoder(this_nobs)
             # reshape back to B, Do
             global_cond = nobs_features.reshape(B, -1)
+            # print("global_cond.shape:",global_cond.shape)
             # empty data for action
             cond_data = torch.zeros(size=(B, T, Da), device=device, dtype=dtype)
             cond_mask = torch.zeros_like(cond_data, dtype=torch.bool)
@@ -191,8 +192,16 @@ class DiffusionUnetImagePolicy(BaseImagePolicy):
 
     def compute_loss(self, batch):
         # normalize input
-        assert 'valid_mask' not in batch
-        nobs = self.normalizer.normalize(batch['obs'])
+        assert 'valid_mask' not in batch #防止二次加工
+        nobs = self.normalizer.normalize(batch['obs']) 
+        # === 正确的打印方式 ===
+        # print("Keys in nobs:", nobs.keys()) #dict_keys(['camera_1', 'camera_3', 'robot_eef_pose'])
+        # # 针对具体的 key 查看形状
+        # if 'camera_1' in nobs:
+        #     print("nobs['camera_1'].shape:", nobs['camera_1'].shape)   #[B,T,C,H,W]  [16, 2, 3, 240, 320]
+        # if 'robot_eef_pose' in nobs:
+        #     print("nobs['robot_eef_pose'].shape:", nobs['robot_eef_pose'].shape)  #[16, 2, 2]
+        # ===========================
         nactions = self.normalizer['action'].normalize(batch['action'])
         batch_size = nactions.shape[0]
         horizon = nactions.shape[1]
@@ -206,9 +215,13 @@ class DiffusionUnetImagePolicy(BaseImagePolicy):
             # reshape B, T, ... to B*T
             this_nobs = dict_apply(nobs, 
                 lambda x: x[:,:self.n_obs_steps,...].reshape(-1,*x.shape[2:]))
-            nobs_features = self.obs_encoder(this_nobs)
+            # print("this_nobs.shape:",this_nobs['camera_1'].shape)  #[B*T,C,H,W] [32,3,240,320]
+            # print("this_nobs.shape:",this_nobs['robot_eef_pose'].shape)  #[B*T,2] [32,2]
+            nobs_features = self.obs_encoder(this_nobs)  #[B*T,32*32+2]  [32,1026]
+            # print("nobs_features.shape:",nobs_features.shape) 
             # reshape back to B, Do
-            global_cond = nobs_features.reshape(batch_size, -1)
+            global_cond = nobs_features.reshape(batch_size, -1) # [B, T*(32*32+2)]  [16,2052]
+            # print("global_cond.shape:",global_cond.shape)  
         else:
             # reshape B, T, ... to B*T
             this_nobs = dict_apply(nobs, lambda x: x.reshape(-1, *x.shape[2:]))
@@ -244,10 +257,10 @@ class DiffusionUnetImagePolicy(BaseImagePolicy):
         pred = self.model(noisy_trajectory, timesteps, 
             local_cond=local_cond, global_cond=global_cond)
 
-        pred_type = self.noise_scheduler.config.prediction_type 
-        if pred_type == 'epsilon':
+        pred_type = self.noise_scheduler.config.prediction_type  #获取预测类型
+        if pred_type == 'epsilon': #预测噪声
             target = noise
-        elif pred_type == 'sample':
+        elif pred_type == 'sample': #预测动作
             target = trajectory
         else:
             raise ValueError(f"Unsupported prediction type {pred_type}")

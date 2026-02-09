@@ -1,0 +1,73 @@
+<mujoco model="table_with_pusht">
+  <asset>
+    <material name="white_mat" rgba="1 1 1 1" specular="0.5" shininess="0.1"/>
+    <!-- <material name="metal_mat" rgba="0.2 0.2 0.2 1" specular="0.5" shininess="0.5"/> -->
+  </asset>
+ 
+<default>
+    <default class="pusht_collision">
+        <geom type="box" density="500" rgba="0.7 0.2 0.2 1"
+              friction="1 0.005 0.0001"
+              solref="0.01 1"  
+              solimp="0.9 0.95 0.001"/> 
+    </default>
+    <!-- 目标T形线条粗细 -->
+    <default class="outline_line"> 
+        <geom type="capsule" size="0.005" rgba="0 0 0 1" contype="0" conaffinity="0"/>
+    </default>
+  </default>
+
+  <worldbody>
+    <body name="table" pos="0.5 0 0"> 
+      <geom name="table_top" type="box" size="0.6 0.8 0.02" pos="0 0 0.9"  material="white_mat" friction="1 0.005 0.0001" solref="0.02 1" solimp="0.95 0.99 0.001"/>
+      <geom name="leg1" type="cylinder" size="0.02 0.44" pos="0.5 0.3 0.44" material="white_mat"/>
+      <geom name="leg2" type="cylinder" size="0.02 0.44" pos="-0.5 0.3 0.44" material="white_mat"/>
+      <geom name="leg3" type="cylinder" size="0.02 0.44" pos="0.5 -0.3 0.44" material="white_mat"/>
+      <geom name="leg4" type="cylinder" size="0.02 0.44" pos="-0.5 -0.3 0.44" material="white_mat"/>
+    </body>
+
+    <body name="pusht_block" pos="0.5 -0.15 0.95" euler="0 0 3">
+      <freejoint/>
+      <!-- T形的横和竖，这里是分开的 -->
+      <geom class="pusht_collision" name="t_bar_top" size="0.1 0.025 0.02" pos="0 0.075 0"/>
+      <geom class="pusht_collision" name="t_bar_stem" size="0.025 0.075 0.02" pos="0 -0.025 0"/>
+    </body>
+
+    <!-- <body name="goal_target" euler="0 0 2" pos="0.50 -0.25 0.921">
+       
+       <geom class="outline_line" fromto="-0.1 0.1 0    0.1 0.1 0"/>
+       
+       <geom class="outline_line" fromto="0.1 0.1 0     0.1 0.05 0"/>
+       
+       <geom class="outline_line" fromto="0.1 0.05 0    0.025 0.05 0"/>
+       
+       <geom class="outline_line" fromto="0.025 0.05 0  0.025 -0.1 0"/>
+       
+       <geom class="outline_line" fromto="0.025 -0.1 0  -0.025 -0.1 0"/>
+       
+       <geom class="outline_line" fromto="-0.025 -0.1 0 -0.025 0.05 0"/>
+       
+       <geom class="outline_line" fromto="-0.025 0.05 0 -0.1 0.05 0"/>
+       
+       <geom class="outline_line" fromto="-0.1 0.05 0   -0.1 0.1 0"/>
+    </body> -->
+    <body name="goal_target" euler="0 0 2" pos="0.50 -0.25 0.921">
+       <geom type="box" size="0.1 0.025 0.001" pos="0 0.075 0.001" 
+             material="white_mat" contype="0" conaffinity="0"/>
+      <geom type="box" size="0.105 0.030 0.001" pos="0 0.075 0" 
+             rgba="0 0 0 1" contype="0" conaffinity="0"/>
+       <geom type="box" size="0.025 0.075 0.001" pos="0 -0.025 0.001" 
+             material="white_mat" contype="0" conaffinity="0"/>
+       <geom type="box" size="0.030 0.080 0.001" pos="0 -0.025 0" 
+             rgba="0 0 0 1" contype="0" conaffinity="0"/>
+    </body>
+    <body name="bullseye_target" pos="0.3 0.3 0.921">
+        <geom type="cylinder" size="0.02 0.001" rgba="0 0 0 1" contype="0" conaffinity="0"/>
+        
+        <geom type="cylinder" size="0.015 0.001" pos="0 0 0.001" material="white_mat" contype="0" conaffinity="0"/>
+    </body>
+  </worldbody>
+  <!-- <keyframe>
+        <key name="push" qpos="0.65 0.15 0.95  0.999 0 0 0.026" /> 
+  </keyframe> -->
+</mujoco>

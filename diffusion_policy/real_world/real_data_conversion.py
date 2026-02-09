@@ -17,7 +17,7 @@ from diffusion_policy.codecs.imagecodecs_numcodecs import (
 )
 register_codecs()
 
-
+# 将真实机器人采集的原始数据（通常由 MP4 视频文件 + Zarr 低维数据组成）转换为适合训练的统一 Zarr 格式的 ReplayBuffer
 def real_data_to_replay_buffer(
         dataset_path: str, 
         out_store: Optional[zarr.ABSStore]=None, 
@@ -70,8 +70,8 @@ def real_data_to_replay_buffer(
         chunks_map[key] = value.shape
         compressor_map[key] = lowdim_compressor
 
-    print('Loading lowdim data')
-    out_replay_buffer = ReplayBuffer.copy_from_store(
+    print('Loading lowdim data: [robot_eef_pose, action] ')
+    out_replay_buffer = ReplayBuffer.copy_from_store( #加载低维数据 [robot_eef_pose, action]
         src_store=in_replay_buffer.root.store,
         store=out_store,
         keys=lowdim_keys,
@@ -90,12 +90,12 @@ def real_data_to_replay_buffer(
         except Exception as e:
             return False
 
-    
+    #加载camera数据
     n_cameras = 0
     camera_idxs = set() 
     if image_keys is not None:
         n_cameras = len(image_keys)
-        camera_idxs = set(int(x.split('_')[-1]) for x in image_keys)
+        camera_idxs = set(int(x.split('_')[-1]) for x in image_keys) #image_keys = ['camera_1', 'camera_3']
     else:
         # estimate number of cameras
         episode_video_dir = in_video_dir.joinpath(str(0))
@@ -103,7 +103,7 @@ def real_data_to_replay_buffer(
         camera_idxs = set(int(x.stem) for x in episode_video_paths)
         n_cameras = len(episode_video_paths)
     
-    n_steps = in_replay_buffer.n_steps
+    n_steps = in_replay_buffer.n_steps #轨迹总步长
     episode_starts = in_replay_buffer.episode_ends[:] - in_replay_buffer.episode_lengths[:]
     episode_lengths = in_replay_buffer.episode_lengths
     timestamps = in_replay_buffer['timestamp'][:]
@@ -139,7 +139,8 @@ def real_data_to_replay_buffer(
                         video = container.streams.video[0]
                         vcc = video.codec_context
                         this_res = (vcc.width, vcc.height)
-                    in_img_res = this_res
+                        # print(this_res)
+                    in_img_res = this_res #(1280, 720)
 
                     arr_name = f'camera_{camera_idx}'
                     # figure out save resolution
@@ -149,7 +150,7 @@ def real_data_to_replay_buffer(
                             out_img_res = tuple(out_resolutions[arr_name])
                     elif out_resolutions is not None:
                         out_img_res = tuple(out_resolutions)
-
+                    # print(out_img_res)
                     # allocate array
                     if arr_name not in out_replay_buffer:
                         ow, oh = out_img_res
@@ -162,7 +163,7 @@ def real_data_to_replay_buffer(
                         )
                     arr = out_replay_buffer[arr_name]
 
-                    image_tf = get_image_transform(
+                    image_tf = get_image_transform(  #调整分辨率
                         input_res=in_img_res, output_res=out_img_res, bgr_to_rgb=False)
                     for step_idx, frame in enumerate(read_video(
                             video_path=str(video_path),

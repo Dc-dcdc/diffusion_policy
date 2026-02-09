@@ -51,7 +51,7 @@ class RealEnv:
             init_joints=False,
             # video capture params
             video_capture_fps=30,
-            video_capture_resolution=(1280,720),
+            video_capture_resolution=(1280,720), #(源分辨率)
             # saving params
             record_raw_video=True,
             thread_per_video=2,

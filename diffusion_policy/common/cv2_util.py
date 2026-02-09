@@ -80,7 +80,7 @@ def draw_text(
 
         uv_top_left += [0, h * line_spacing]
 
-
+# 将原始 MP4 视频文件解码、调整分辨率，并以压缩的格式写入 Zarr 训练数据库
 def get_image_transform(
         input_res: Tuple[int,int]=(1280,720), 
         output_res: Tuple[int,int]=(640,480), 

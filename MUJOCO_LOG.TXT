@@ -13,3 +13,15 @@ ERROR: GLEW initalization error: Missing GL version
 Mon Jan 12 13:51:26 2026
 ERROR: GLEW initalization error: Missing GL version
 
+Wed Jan 28 02:51:10 2026
+WARNING: Nan, Inf or huge value in QACC at DOF 6. The simulation is unstable. Time = 0.0590.
+
+Wed Jan 28 02:52:19 2026
+WARNING: Nan, Inf or huge value in QACC at DOF 11. The simulation is unstable. Time = 6.4640.
+
+Fri Feb  6 10:24:08 2026
+WARNING: Nan, Inf or huge value in QACC at DOF 9. The simulation is unstable. Time = 0.2375.
+
+Mon Feb  9 10:20:48 2026
+WARNING: File size over 2GB is not supported. File: '/home/dc/diffusion_policy/data/outputs/2026.02.05/10.26.24_train_diffusion_unet_image_mujoco_image/checkpoints/epoch=0790-train_loss=0.000.ckpt'
+

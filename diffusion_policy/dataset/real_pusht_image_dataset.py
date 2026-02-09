@@ -50,7 +50,7 @@ class RealPushTImageDataset(BaseImageDataset):
             cache_zarr_path = os.path.join(dataset_path, shape_meta_hash + '.zarr.zip')
             cache_lock_path = cache_zarr_path + '.lock'
             print('Acquiring lock on cache.')
-            with FileLock(cache_lock_path):
+            with FileLock(cache_lock_path): #情况 A：缓存不存在（创建缓存）
                 if not os.path.exists(cache_zarr_path):
                     # cache does not exists
                     try:
@@ -68,7 +68,7 @@ class RealPushTImageDataset(BaseImageDataset):
                     except Exception as e:
                         shutil.rmtree(cache_zarr_path)
                         raise e
-                else:
+                else: #缓存已存在（加载缓存）
                     print('Loading cached ReplayBuffer from Disk.')
                     with zarr.ZipStore(cache_zarr_path, mode='r') as zip_store:
                         replay_buffer = ReplayBuffer.copy_from_store(
@@ -80,7 +80,7 @@ class RealPushTImageDataset(BaseImageDataset):
                 shape_meta=shape_meta,
                 store=zarr.MemoryStore()
             )
-        
+        #将数据集中的绝对动作坐标（Absolute Actions）转换为相对动作（Delta Actions），即每一帧的动作变为“相对于上一帧的位移”
         if delta_action:
             # replace action as relative to previous frame
             actions = replay_buffer['action'][:]

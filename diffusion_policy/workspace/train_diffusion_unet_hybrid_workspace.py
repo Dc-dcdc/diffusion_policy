@@ -193,10 +193,10 @@ class TrainDiffusionUnetHybridWorkspace(BaseWorkspace):
                             'epoch': self.epoch,
                             'lr': lr_scheduler.get_last_lr()[0]
                         }
-                        # 2. 【新增】如果开启了 EMA，计算并记录当前的衰减率
+                        # 2.  如果开启了 EMA，计算并记录当前的衰减率
                         if cfg.training.use_ema:
                             # 注意：get_decay 需要传入当前的步数作为参数
-                            step_log['ema_decay'] = ema.get_decay(self.global_step)
+                            step_log['ema_decay'] = ema.get_decay(self.global_step) #记录衰减率
 
                         is_last_batch = (batch_idx == (len(train_dataloader)-1))
                         if not is_last_batch:

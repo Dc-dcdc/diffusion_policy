@@ -74,6 +74,7 @@ def downsample_mask(mask, max_n, seed=0):
         assert np.sum(train_mask) == n_train
     return train_mask
 
+# 从 ReplayBuffer（存储机器人轨迹的缓冲区）中提取特定长度的连续序列，并处理边界填充（Padding）和性能优化
 # 样本的索引值是累加的   读到样本末尾时，会使用padding填充，不会和下一条样本进行混合读取
 class SequenceSampler:
     def __init__(self, 
