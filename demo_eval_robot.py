@@ -438,9 +438,9 @@ class SimEnv:
         return is_success, is_robot_reset
 
 @click.command()
-@click.option('--output', '-o', default='/home/dc/diffusion_policy/data/test_pusht_mujoco', help="Directory to save dataset.")
-@click.option('--xml_path', '-x', default='/home/dc/diffusion_policy/diffusion_policy/env/pusht/mujoco_ur5e/pusht.xml', help="Path to your Mujoco XML.")
-@click.option('--checkpoint', '-c', default='/home/dc/diffusion_policy/data/outputs/2026.02.05/10.26.24_train_diffusion_unet_image_mujoco_image/checkpoints/epoch=0790-train_loss=0.000.ckpt', help='Path to checkpoint (.ckpt)')
+@click.option('--output', '-o', default='./data/test_pusht_mujoco', help="Directory to save dataset.")
+@click.option('--xml_path', '-x', default='./diffusion_policy/env/pusht/mujoco_ur5e/pusht.xml', help="Path to your Mujoco XML.")
+@click.option('--checkpoint', '-c', default='./data/outputs/2026.02.05/10.26.24_train_diffusion_unet_image_mujoco_image/checkpoints/epoch=0790-train_loss=0.000.ckpt', help='Path to checkpoint (.ckpt)')
 @click.option('--frequency', '-f', default=10, type=float, help="Control frequency in Hz.")
 def main(output, xml_path, checkpoint, frequency=10):
     dt = 1/frequency

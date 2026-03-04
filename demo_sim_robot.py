@@ -363,7 +363,7 @@ class SimEnv:
         self.this_video_dir.mkdir(parents=True, exist_ok=True)
         
         # 初始化 VideoWriters
-        # 对应 real_env，我们保存 camera_0 和 camera_1
+        # 对应 real_env，保存 camera_0 和 camera_1
         # fps 使用 self.frequency
         fourcc = cv2.VideoWriter_fourcc(*'mp4v')
         
@@ -476,8 +476,8 @@ class SimEnv:
         return is_success, is_robot_reset
 
 @click.command()
-@click.option('--output', '-o', default='/home/dc/diffusion_policy/data/demo_pusht_mujoco_plus/replay_buffer', help="Directory to save dataset.")
-@click.option('--xml_path', '-x', default='/home/dc/diffusion_policy/diffusion_policy/env/pusht/mujoco_ur5e/pusht.xml', help="Path to your Mujoco XML.")
+@click.option('--output', '-o', default='./data/demo_pusht_mujoco_plus/replay_buffer', help="Directory to save dataset.")
+@click.option('--xml_path', '-x', default='./diffusion_policy/env/pusht/mujoco_ur5e/pusht.xml', help="Path to your Mujoco XML.")
 @click.option('--frequency', '-f', default=10, type=float, help="Control frequency in Hz.")
 def main(output, xml_path, frequency=10):
     dt = 1/frequency

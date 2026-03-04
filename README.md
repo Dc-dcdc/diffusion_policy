@@ -1,5 +1,5 @@
 # Diffusion Policy
-
+## ✨ 在原代码上添加了mujoco环境下的push T任务仿真，[演示视频](https://www.bilibili.com/video/BV1JmcKzBEvZ/?spm_id_from=333.1387.homepage.video_card.click&vd_source=57604547cd58e55f3429892e0d6965bd)
 [[Project page]](https://diffusion-policy.cs.columbia.edu/)
 [[Paper]](https://diffusion-policy.cs.columbia.edu/#paper)
 [[Data]](https://diffusion-policy.cs.columbia.edu/data/)
@@ -261,7 +261,7 @@ python eval_real_robot.py -i data/outputs/blah/checkpoints/latest.ckpt -o data/e
 Press "C" to start evaluation (handing control over to the policy). Press "S" to stop the current episode.
 
 ## ✨ Demo, Training and Eval on a mujoco Robot
-使用鼠标控制动捕采集数据，里面有默认保存地址，可以进行修改
+使用鼠标控制动捕采集数据，里面有默认保存地址。此外，为了保证数据质量，对30秒以内且达到success标准的数据进行保存，超时则不会保存。视频中效果为150条数据训练800轮的效果，数据质量直接影响最终效果，建议多练习后再收集质量较高的数据。
 ```console
 python demo_sim_robot.py -o data/demo_pusht_mujoco
 ```
